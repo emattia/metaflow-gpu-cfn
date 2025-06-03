@@ -86,3 +86,33 @@ This will run in the `job-queue-gpu-metaflow` queue (look at the `start` step `@
 ```bash
 python gpu_flow.py run
 ```
+
+## Issues
+
+### Wrong RDS version
+
+AWS seems to have all sorts of churn in Postgres versions on RDS. 
+Activate your desired AWS profile, and run this command to find available versions:
+```bash
+aws rds describe-db-engine-versions --engine postgres --query 'DBEngineVersions[].EngineVersion' --output table
+```
+
+Edit the `EngineVersion` of this section
+
+```
+  RDSMasterInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBName: 'metaflow'
+      AllocatedStorage: 20
+      DBInstanceClass: 'db.t3.small'
+      DeleteAutomatedBackups: 'true'
+      StorageType: 'gp2'
+      Engine: 'postgres'
+      EngineVersion: '16.4'
+      MasterUsername: !Join ['', ['{{resolve:secretsmanager:', !Ref MyRDSSecret, ':SecretString:username}}' ]]
+      MasterUserPassword: !Join ['', ['{{resolve:secretsmanager:', !Ref MyRDSSecret, ':SecretString:password}}' ]]
+      VPCSecurityGroups:
+        - !Ref 'RDSSecurityGroup'
+      DBSubnetGroupName: !Ref 'DBSubnetGroup'
+```
